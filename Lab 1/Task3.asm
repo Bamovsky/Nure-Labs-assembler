@@ -56,8 +56,8 @@ ADDR titleStr								;ADDR- определение адреса titleStr источника
 invoke SetConsoleTitle, 						;invoke - вызов функции API SetConsoleTitle
 ADDR titleStr ;								;ADDR- определение адреса titleStr
 invoke GetStdHandle, 							;invoke - вызов функции API GetStdHandle 
-STD_INPUT_HANDLE 							;получаем хэндл ввода
-MOV inHandle, EAX						     ;сохраняе хэндл вывода в ячейке inHandle
+STD_INPUT_HANDLE 							      ;получаем хэндл ввода
+MOV inHandle, EAX						            ;сохраняе хэндл вывода в ячейке inHandle
 invoke GetStdHandle, 							;invoke - вызов функции API GetStdHandle 
 STD_OUTPUT_HANDLE 							;получаем хэндл вывода
 MOV outHandle, EAX							;сохраняе хэндл вывода в ячейке outHandle
