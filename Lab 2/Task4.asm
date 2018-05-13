@@ -1,68 +1,323 @@
-.486						;используется набор команд i80486
-.model flat, STDCALL		;модель FLAT, соглашение STDCALL
-option casemap:none			;различать ПРОПИСНЫЕ и строчные
+;Черкашин В.А. Лаба 2 задание 4 Вариант 11
+.486					
+.model flat, STDCALL	   
+option casemap:none
 include \masm32\include\windows.inc
 include \masm32\include\user32.inc
 include \masm32\include\kernel32.inc
+include   \masm32\include\msvcrt.inc			      
 includelib \masm32\lib\user32.lib
 includelib \masm32\lib\kernel32.lib
-.stack 128 				;сегмент стека 128 байт
-.data						;сегмент данных
-A 	SWORD 	1180h 		;A=0001 0001 1000 0000b=4480d
-B 	SWORD 	2280h		;B=0010 0010 1000 0000b=8832d 
-D 	SWORD 	1100h 		;D= 0001 0001 0000 0000b=4352d
-Y 	SWORD ?				;Y=A+B-D
-mD 	SWORD ?				;D=-D 
-ApB 	SWORD ? 			;ApB=A+B
-ApBmD 	SWORD ? 			;ApBmD=A+B-D
-addrA 	DWORD ? 			;адрес А
-addrB 	DWORD ?				;адрес В
-addrD 	DWORD ?				;адрес D
-addrY 	DWORD ?				;адрес Y=A+B-D
-addrmD 	DWORD ?				;адрес mD
-addrApB 	DWORD ?			;адрес ApB=A+B
-addrApBmD 	DWORD ?		;адрес ApBmD=A+B-D
-;=======переменные функции MessageBox ================
-MsgBoxTitle BYTE "Заголовок MessageBox",0
-MsgBoxText  BYTE 128 dup(?),0
-;=======строка спецификации формата====================
-format1 db "Значение А в 10-й системе A=", "%d","d",0Dh,0Ah,
-"Значение А в 16-й сиcтеме А=","%x","h",0Dh,0Ah, 
-"Адрес ячейки памяти [А]=","%lx","h",0
-;======================================================
-.code 						;сегмент кода
-start: 						;метка начала основной программы
-MOV addrD,OFFSET D 			;адрес D  addrD
-MOV addrB,OFFSET B 			;адрес B ' addrB
-MOV addrA,OFFSET A 			;адрес A ' addrA
-MOV addrY,OFFSET Y			;адрес Y ' addrY
-MOV addrmD,OFFSET mD		;адрес mD ' addrmD
-MOV addrApB,OFFSET ApB		;адрес ApB ' addrApB
-MOV addrApBmD,OFFSET ApBmD	;адрес ApBmD ' addrApBmD
-;=======================================
-PUSH D 					;занесение D в стек, [ESP]=[ESP+2]
-PUSH B					;занесение B в стек, [ESP]=[ESP+2]
-PUSH A 					;занесение A в стек, [ESP]=[ESP+2]
-MOV EBP,ESP 			;EBP=ESP для доступа к стеку по EBP
-;=======================================
-invoke wsprintf, addr MsgBoxText,addr format1, A, A, addrA
-invoke MessageBox, 0, ADDR MsgBoxText, ADDR MsgBoxTitle, MB_OK
-;=======================================
-MOV AX,[EBP] 			;AX=A, А из стека по адресу [EBP]
-ADD AX,[EBP+2] 		;AX=AX+B, B из стека по адресу [EBP+2]
-MOV ECX,addrApB		;ECX=addrApB, адрес ApB в [ECX]
-MOV [ECX],AX 			;ApB=AX=A+B, адрес ApB в [ECX]
-;=======================================
-MOV EBX,addrmD			;EBX=addrmD - адрес mD в [EBX]
-MOV DX,[EBP+4]			;DX=D, D из стека по адресу [EBP+4]
-NEG DX 					;DX=-DX=-D
-MOV [EBX],DX			;mD=DX=-D, адрес mD в [EBX]
-;=======================================
-SUB AX,[EBP+4] 		;AX=AX-D, D из стека по адресу [EBP+4]
-MOV ESI,addrApBmD		;ESI=addrApBmD, адрес ApBmD в [ESI]
-MOV [ESI],AX			;ApBmD=AX, адрес ApBmD в [ESI]
-MOV EDI,addrY 			;EDI= addrY, адрес Y в [EDI]
-MOV [EDI],AX 			;Y=AX, адрес Y в [EDI]
-invoke ExitProcess, 0 	;API функция завершения процесса
-end start				;конец основной программы 
+includelib \masm32\lib\msvcrt.lib 					
+;=========================================	
+.data
+; Формула f(x)=a*x^2 - a*b*d/y+d 
+X dw ? 
+A dw ?
+B dw ?
+D dw ?
+Y dw ?
+addrX dd ? 
+addrA dd ?
+addrB dd ?
+addrD dd ?
+addrY dd ?
+XmX SWORD ?
+AmXmX SWORD ?
+AmB SWORD ?
+AmBmD SWORD ?
+YpD SWORD ?
+Z SWORD ?
+F SWORD ?
+addrF DD ?
+addrXmX dd ?
+addrAmXmX dd ?
+addrAmB dd ?
+addrAmBmD dd ?
+addrYpD dd ?
+addrZ dd ?
+outHandle dd ?
+inHandle dd ?
+ConsoleTitle db "Лаба 2", 0
+TitleMB db "Промежуточные результаты",0
+TextBuf db 50 dup (?)
+format db "Промежуточные результаты",0dh,0ah,"XmX=%d",0dh,0ah, "AmXmX=%d",0dh,0ah, "AmBmD=%d",0dh,0ah, "YpD=%d",0dh,0ah,"Z=%d",0
+format1 db "Адресса промежуточных результатов",0dh,0ah,"addrXmX=%d",0dh,0ah, "addrAmXmX=%d",0dh,0ah, "addrAmBmD=%d",0dh,0ah, "addrYpD=%d",0dh,0ah,"addrZ=%d",0
+format2 db "Размер промежуточных результатов в байтах",0dh,0ah,"sizeXmX=%d",0dh,0ah, "sizeAmXmX=%d",0dh,0ah, "sizeAmBmD=%d",0dh,0ah, "sizeYpD=%d",0dh,0ah,"sizeZ=%d",0
+formatH db "Промежуточные результаты H",0dh,0ah,"XmX=%0X",0dh,0ah, "AmXmX=%0X",0dh,0ah, "AmBmD=%0X",0dh,0ah, "YpD=%0X",0dh,0ah,"Z=%0X",0
+result db "Конечный результат %d", 0
+namberW dd ?
+namberR dd ?
+buf db "Введите X",0
+buf1 db "Введите A",0
+buf2 db "Введите B",0
+buf3 db "Введите D",0
+buf4 db "Введите Y",0
+StartText db "Выполнил студент группы АКТСИу 17-2 Черкашин В.А Вариант №11 Стек + Регистр EBP",0dh,0ah,0
+Task db "Формула f(x)=a*x^2 - a*b*d/y+d, где X=4, A=-8, B=6, D=8, Y=12",0dh,0ah,0
+NumberBuf db 16 dup (?)
+;==========================================					
+.code
+start:
+;==Запрос Консоли, Установка Title, Получения handle
+invoke AllocConsole	 																												   					         
+invoke GetStdHandle, STD_OUTPUT_HANDLE 							
+MOV outHandle, EAX
+invoke GetStdHandle, 						
+STD_INPUT_HANDLE 							    
+MOV inHandle, EAX						            
+;===Перекодируем строк =================
+invoke CharToOem, 						      
+ADDR ConsoleTitle, 								      
+ADDR ConsoleTitle 
 
+invoke SetConsoleTitle, ADDR ConsoleTitle
+
+invoke CharToOem, 						      
+ADDR StartText, 								      
+ADDR StartText 
+invoke CharToOem, 						      
+ADDR Task, 								      
+ADDR Task 
+invoke CharToOem, 						      
+ADDR buf, 								      
+ADDR buf 
+invoke CharToOem, 						      
+ADDR buf1, 								      
+ADDR buf1 
+invoke CharToOem, 						      
+ADDR buf2, 								      
+ADDR buf2 
+invoke CharToOem, 						      
+ADDR buf3, 								      
+ADDR buf3 
+invoke CharToOem, 						      
+ADDR buf4, 								      
+ADDR buf4 
+;===Заносим значения=====================
+
+invoke WriteConsoleA, 							
+outHandle, 									
+ADDR StartText, 									
+SIZEOF StartText, 								
+ADDR namberW, 								
+NULL 
+
+invoke WriteConsoleA, 							
+outHandle, 									
+ADDR Task, 									
+SIZEOF Task, 								
+ADDR namberW, 								
+NULL 
+
+
+invoke WriteConsoleA, 							
+outHandle, 									
+ADDR buf, 									
+SIZEOF buf, 								
+ADDR namberW, 								
+NULL 
+
+invoke ReadConsole, 							
+inHandle,									
+ADDR NumberBuf,								
+SIZEOF NumberBuf,							
+ADDR namberR, 								
+NULL 	
+
+invoke crt_atoi, 							     
+addr NumberBuf								
+MOV X, AX 
+
+invoke WriteConsoleA, 							
+outHandle, 									
+ADDR buf1, 									
+SIZEOF buf1, 								
+ADDR namberW, 								
+NULL 
+
+invoke ReadConsole, 							
+inHandle,									
+ADDR NumberBuf,								
+SIZEOF NumberBuf,							
+ADDR namberR, 								
+NULL
+
+invoke crt_atoi, 							     
+addr NumberBuf								
+MOV A, AX 
+
+invoke WriteConsoleA, 							
+outHandle, 									
+ADDR buf2, 									
+SIZEOF buf2, 								
+ADDR namberW, 								
+NULL 
+
+invoke ReadConsole, 							
+inHandle,									
+ADDR NumberBuf,								
+SIZEOF NumberBuf,							
+ADDR namberR, 								
+NULL 
+
+invoke crt_atoi, 							     
+addr NumberBuf 								
+MOV B, AX 
+
+invoke WriteConsoleA, 							
+outHandle, 									
+ADDR buf3, 									
+SIZEOF buf3, 								
+ADDR namberW, 								
+NULL 
+
+invoke ReadConsole, 							
+inHandle,									
+ADDR NumberBuf,								
+SIZEOF NumberBuf,							
+ADDR namberR, 								
+NULL
+
+invoke crt_atoi, 							     
+addr NumberBuf								
+MOV D, AX 
+
+invoke WriteConsoleA, 							
+outHandle, 									
+ADDR buf4, 									
+SIZEOF buf4, 								
+ADDR namberW, 								
+NULL 
+
+invoke ReadConsole, 							
+inHandle,									
+ADDR NumberBuf,								
+SIZEOF NumberBuf,							
+ADDR namberR, 								
+NULL  
+
+invoke crt_atoi, 							     
+addr NumberBuf								
+MOV Y, AX  	
+;====Инициализация переменных адресами=======
+lea eax, X
+mov addrX, eax
+lea eax, A
+mov addrA, eax
+lea eax, B
+mov addrB, eax
+lea eax, D
+mov addrD, eax
+lea eax, Y
+mov addrY, eax
+lea eax, F 
+MOV addrF,eax
+
+
+lea eax,XmX 
+mov addrXmX,eax
+lea eax,AmXmX 
+mov addrAmXmX ,eax
+lea eax,AmB
+mov addrAmB ,eax
+lea eax,AmBmD
+mov addrAmBmD ,eax
+lea eax,YpD
+mov addrYpD ,eax
+lea eax,Z
+mov addrZ ,eax
+;=============================================
+PUSH X ;+8
+PUSH A ;+6
+PUSH B ;+4
+PUSH D ;+2
+PUSH Y ;EBP
+MOV EBP, ESP
+;==============(XmX)==========================
+MOV AX, [EBP+8]
+MUL sword ptr [EBP+8]
+MOV EBX, addrXmX
+MOV [EBX], AX
+;============================================
+MOV AX, [EBP+6]
+MOV EBX, addrXmX
+MUL word ptr [EBX]
+MOV EBX, addrAmXmX
+MOV [EBX], AX										
+;============================================
+MOV AX, [EBP+6]
+MUL word ptr [EBP+4]
+MOV EBX, addrAmB
+MOV [EBX], AX
+;============================================
+MOV AX, [EBP+2]
+MOV EBX, addrAmB
+MUL word ptr [EBX]
+MOV EBX, addrAmBmD
+MOV [EBX], AX
+;============================================
+MOV AX, [EBP]
+ADD AX, [EBP+2]
+MOV EBX, addrYpD
+MOV [EBX], AX
+;============================================
+MOV EBX, addrAmBmD
+MOV AX, sword ptr [EBX]
+MOV EBX, addrYpD
+IDIV sbyte ptr [EBX]
+CBW
+MOV EBX, addrZ
+MOV [EBX], AX 
+;============================================
+MOV EBX, addrAmXmX 
+MOV AX, word ptr [EBX]
+MOV EBX, addrZ
+SUB AX, word ptr [EBX]
+MOV EBX, addrF
+MOV [EBX], AX
+;============================================
+invoke wsprintf, addr TextBuf,addr result, F
+
+invoke CharToOem, 						      
+ADDR TextBuf, 								      
+ADDR TextBuf
+
+invoke WriteConsoleA, 							
+outHandle, 									
+ADDR TextBuf, 									
+SIZEOF TextBuf, 								
+ADDR namberW, 								
+NULL
+
+invoke wsprintf, addr TextBuf,addr format, XmX, AmXmX, AmBmD, YpD, Z
+
+invoke MessageBox, 0, 							
+ADDR TextBuf, 								
+ADDR TitleMB, 							
+MB_OK
+
+
+invoke wsprintf, addr TextBuf,addr formatH, XmX, AmXmX, AmBmD, YpD, Z
+
+invoke MessageBox, 0, 							
+ADDR TextBuf, 								
+ADDR TitleMB, 							
+MB_OK
+
+
+invoke wsprintf, addr TextBuf,addr format1, addrXmX, addrAmXmX, addrAmBmD, addrYpD, addrZ
+
+invoke MessageBox, 0, 							
+ADDR TextBuf, 								
+ADDR TitleMB, 							
+MB_OK
+
+invoke wsprintf, addr TextBuf,addr format2, sizeof XmX, sizeof AmXmX, sizeof AmBmD, sizeof YpD, sizeof Z
+
+invoke MessageBox, 0, 							
+ADDR TextBuf, 								
+ADDR TitleMB, 							
+MB_OK 																
+invoke ExitProcess, 0 					
+end start				
