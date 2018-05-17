@@ -13,6 +13,7 @@ includelib \masm32\lib\msvcrt.lib
 .data
 N dw ?
 M dw ?
+iterator dw ?
 Heap dd ?
 HeapAl dd ?
 outHandle dd ?
@@ -26,7 +27,10 @@ Task db "В двухмерном массиве отсортировать элементы каждого стобца по возрастан
 NewLine db 0dh,0ah
 TextN db "Введите N",0
 TextM db "Введите M", 0	
-NumberBuf db 5 dup (?)		
+NumberBuf db 5 dup (?)	
+TextBuf db 30 dup (?)	
+format db "%d",0
+TitleMB db "Лаб 3",0
 .code
 start:
 ;======Получение консоли, установка Titile, получение Handle====
@@ -62,9 +66,10 @@ call GetProcessHeap ; получить дескриптор кучи
 mov Heap,eax
 invoke HeapAlloc, Heap, HEAP_ZERO_MEMORY, AX ;Выделить память в куче
 MOV HeapAl, EAX 
-MOV EAX, 5
-MOV HeapAl,5
-MOV EBX, [HeapAl]
+;====Заполнение памяти в куче==============
+
+
+
 
 	            								
 invoke ExitProcess, 0 					
