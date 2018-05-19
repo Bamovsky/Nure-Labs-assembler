@@ -1,4 +1,4 @@
-;Черкашин В.А. Лаба 2 задание 1 Вариант 11
+;Черкашин АКТСИу 17-2 Лаба 3 
 .486					
 .model flat, STDCALL	   
 option casemap:none
@@ -13,24 +13,26 @@ includelib \masm32\lib\msvcrt.lib
 .data
 N dw ?
 M dw ?
+Matrix db 128 dup (?)
+MAX dw ?
 iterator dw ?
-Heap dd ?
-HeapAl dd ?
 outHandle dd ?
 inHandle dd ?
 namberW dd ?
 namberR dd ?
 ConsoleTitle db "Лаба 3",0	
 StartText db "Лабараторная работа №3 Черкашин В.А. АКТСИу 17-2 Вариант 11",0
-Task db "В двухмерном массиве отсортировать элементы каждого стобца по возрастанию",0dh,0ah,
-"Найти значение минимального и максимального элемента массива и их индексы до и после сортировки",0
+Task db "В двухмерном массиве отсортировать элементы каждого стобца по возрастанию",0dh,0ah, 
+"найти значение макисмально и минимального элемента и их индексы до и после сортировки",0
+MatrixText db "Введенная матрица",0
 NewLine db 0dh,0ah
 TextN db "Введите N",0
 TextM db "Введите M", 0	
 NumberBuf db 5 dup (?)	
-TextBuf db 30 dup (?)	
-format db "%d",0
+TextBuf db 60 dup (?)	
 TitleMB db "Лаб 3",0
+formatMatrix db "%d ",0
+MaxFormat db "Максимальное значение элемента в матрице = %d",0
 .code
 start:
 ;======Получение консоли, установка Titile, получение Handle====
@@ -59,14 +61,96 @@ invoke WriteConsoleA, outHandle, ADDR TextM, SIZEOF TextM, ADDR namberW, NULL
 invoke ReadConsole, inHandle,	ADDR NumberBuf, SIZEOF NumberBuf, ADDR namberR, NULL
 invoke crt_atoi, addr NumberBuf								
 MOV M, AX 
-;==== Выделение памяти в куче ===============
+;=====Ввод Чисел с клавиатуры ==========
 MOV AX, N
 MUL M
-call GetProcessHeap ; получить дескриптор кучи
-mov Heap,eax
-invoke HeapAlloc, Heap, HEAP_ZERO_MEMORY, AX ;Выделить память в куче
-MOV HeapAl, EAX 
-;====Заполнение памяти в куче==============
+MOV iterator , AX
+mov esi,offset Matrix
+@Input:
+MOV AX, iterator
+CMP AX, 0
+JE @InputEnd
+invoke ReadConsole, inHandle,	ADDR NumberBuf, SIZEOF NumberBuf, ADDR namberR, NULL
+invoke crt_atoi, addr NumberBuf
+MOV [ESI], AX		
+ADD ESI, 2
+MOV AX, iterator
+SUB AX, 1
+MOV iterator, AX			
+JMP @Input
+@InputEnd:
+;========Вывод массива на экран=====================
+invoke CharToOem, ADDR MatrixText, ADDR MatrixText
+invoke WriteConsoleA, outHandle, ADDR MatrixText, SIZEOF MatrixText, ADDR namberW, NULL
+invoke WriteConsoleA, outHandle, ADDR NewLine, SIZEOF NewLine, ADDR namberW, NULL
+LEA ESI, Matrix
+MOV AX, N
+MUL M
+MOV iterator , AX
+Output:
+MOV AX, iterator
+CMP AX, 0
+JE OutputEnd
+MOV BX, word ptr [ESI]
+invoke wsprintf, addr NumberBuf,addr formatMatrix, BX
+invoke CharToOem, ADDR NumberBuf, ADDR NumberBuf
+invoke WriteConsoleA, outHandle, ADDR NumberBuf, SIZEOF NumberBuf, ADDR namberW, NULL
+ADD ESI, 2
+MOV AX, iterator
+SUB AX, 1
+MOV iterator, AX
+MOV AX, iterator
+div byte ptr N
+CMP AH, 0
+JE newline
+JMP Output
+newline:
+invoke WriteConsoleA, outHandle, ADDR NewLine, SIZEOF NewLine, ADDR namberW, NULL
+JMP Output
+OutputEnd:
+;=============Поиск максимального значения  и его вывод==============================
+LEA ESI, Matrix
+MOV AX, N
+MUL M
+MOV iterator , AX
+MOV AX, [ESI]
+MOV MAX,AX
+ADD ESI,2
+Mmax:
+MOV AX, iterator
+CMP AX, 1
+JE MaxEND
+MOV AX, [ESI]
+CMP AX, MAX
+JA MaxProm
+MOV AX, iterator
+SUB AX, 1
+MOV iterator, AX
+ADD ESI,2
+JMP Mmax
+MaxProm:
+MOV MAX, AX
+JMP Mmax
+MOV AX, iterator
+SUB AX, 1
+MOV iterator, AX
+ADD ESI,2
+MaxEND:
+invoke wsprintf, addr TextBuf,addr MaxFormat, MAX
+invoke CharToOem, ADDR TextBuf, ADDR TextBuf
+invoke WriteConsoleA, outHandle, ADDR TextBuf, SIZEOF TextBuf, ADDR namberW, NULL
+invoke WriteConsoleA, outHandle, ADDR NewLine, SIZEOF NewLine, ADDR namberW, NULL
+;========Поиск минимального значения и его вывод=======================
+
+
+
+
+invoke ReadConsole, inHandle,	ADDR NumberBuf, SIZEOF NumberBuf, ADDR namberR, NULL
+
+
+
+
+
 
 
 
