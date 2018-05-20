@@ -15,6 +15,7 @@ N dw ?
 M dw ?
 Matrix db 128 dup (?)
 MAX dw ?
+MIN dw ?
 iterator dw ?
 outHandle dd ?
 inHandle dd ?
@@ -33,6 +34,7 @@ TextBuf db 60 dup (?)
 TitleMB db "Лаб 3",0
 formatMatrix db "%d ",0
 MaxFormat db "Максимальное значение элемента в матрице = %d",0
+MinFormat db "Минимальное значение элемента в матрице = %d",0
 .code
 start:
 ;======Получение консоли, установка Titile, получение Handle====
@@ -130,17 +132,50 @@ ADD ESI,2
 JMP Mmax
 MaxProm:
 MOV MAX, AX
-JMP Mmax
 MOV AX, iterator
 SUB AX, 1
 MOV iterator, AX
 ADD ESI,2
+JMP Mmax
 MaxEND:
 invoke wsprintf, addr TextBuf,addr MaxFormat, MAX
 invoke CharToOem, ADDR TextBuf, ADDR TextBuf
 invoke WriteConsoleA, outHandle, ADDR TextBuf, SIZEOF TextBuf, ADDR namberW, NULL
 invoke WriteConsoleA, outHandle, ADDR NewLine, SIZEOF NewLine, ADDR namberW, NULL
 ;========Поиск минимального значения и его вывод=======================
+LEA ESI, Matrix
+MOV AX, N
+MUL M
+MOV iterator , AX
+MOV AX, [ESI]
+MOV MIN,AX
+ADD ESI,2
+Mmin:
+MOV AX, iterator
+CMP AX, 1
+JE MinEND
+MOV AX, [ESI]
+CMP AX, MIN
+JL MinProm
+MOV AX, iterator
+SUB AX, 1
+MOV iterator, AX
+ADD ESI,2
+JMP Mmin
+MinProm:
+MOV MIN, AX
+MOV AX, iterator
+SUB AX, 1
+MOV iterator, AX
+ADD ESI,2
+JMP Mmin
+MinEND:
+invoke wsprintf, addr TextBuf,addr MinFormat, MIN
+invoke CharToOem, ADDR TextBuf, ADDR TextBuf
+invoke WriteConsoleA, outHandle, ADDR TextBuf, SIZEOF TextBuf, ADDR namberW, NULL
+invoke WriteConsoleA, outHandle, ADDR NewLine, SIZEOF NewLine, ADDR namberW, NULL
+;==========Сортировка элементов в матрице =====================================
+
 
 
 
