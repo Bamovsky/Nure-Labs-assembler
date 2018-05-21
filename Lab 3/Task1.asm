@@ -18,6 +18,7 @@ Matrix db 128 dup (?)
 MAX dw ?
 MIN dw ?
 iterator dw ?
+iterator2 dw ?
 outHandle dd ?
 inHandle dd ?
 namberW dd ?
@@ -183,10 +184,16 @@ MOV iterator, AX
 MOV AX, N
 SUB AX, 1
 MOV Ns1, AX
+MOV AX, 0
+MOV iterator2, AX
+SortInner:
+MOV AX, iterator2
+CMP AX, M
+JE Sortend
 Sort:
 MOV AX, iterator
 CMP AX, Ns1
-JE Sortend
+JE SortInnerEnd
 MUL N
 MOV BX, 2
 MUL BX
@@ -204,26 +211,47 @@ CMP [ECX], AX
 JA SortProm
 JMP Sort
 SortProm:
-DEC iterator
-MOV [ECX],EAX
-MOV AX, iterator
-MUL N
-MOV BX, 0
-MUL BX
-MOV BP, AX
-LEA EBX, Matrix[EBP][ESI]
-MOV EAX, [ECX]
-MOV [EBX],EAX
-INC iterator
+MOV AX, [ECX]
+MOV DX, [EBX]
+MOV [ECX],DX
+MOV [EBX],AX
 JMP Sort
+SortInnerEnd:
+INC iterator2
+MOV SI, iterator2
+MOV AX, 0
+MOV iterator, AX
+JMP SortInner
 Sortend:
-MOV EBP, 0
-MOV ESI, 0
-invoke wsprintf, addr TextBuf,addr MinFormat, Matrix[EBP][ESI]
-invoke CharToOem, ADDR TextBuf, ADDR TextBuf
-invoke WriteConsoleA, outHandle, ADDR TextBuf, SIZEOF TextBuf, ADDR namberW, NULL
+;========Вывод сортированного массива на экран =============
+invoke WriteConsoleA, outHandle, ADDR MatrixText, SIZEOF MatrixText, ADDR namberW, NULL
 invoke WriteConsoleA, outHandle, ADDR NewLine, SIZEOF NewLine, ADDR namberW, NULL
-
+LEA ESI, Matrix
+MOV AX, N
+MUL M
+MOV iterator , AX
+Output1:
+MOV AX, iterator
+CMP AX, 0
+JE OutputEnd1
+MOV BX, word ptr [ESI]
+invoke wsprintf, addr NumberBuf,addr formatMatrix, BX
+invoke CharToOem, ADDR NumberBuf, ADDR NumberBuf
+invoke WriteConsoleA, outHandle, ADDR NumberBuf, SIZEOF NumberBuf, ADDR namberW, NULL
+ADD ESI, 2
+MOV AX, iterator
+SUB AX, 1
+MOV iterator, AX
+MOV AX, iterator
+div byte ptr N
+CMP AH, 0
+JE newline1
+JMP Output1
+newline1:
+invoke WriteConsoleA, outHandle, ADDR NewLine, SIZEOF NewLine, ADDR namberW, NULL
+JMP Output1
+OutputEnd1:
+;======Что б консоль не закрылась ==========================
 
 
 
