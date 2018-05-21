@@ -13,6 +13,7 @@ includelib \masm32\lib\msvcrt.lib
 .data
 N dw ?
 M dw ?
+Ns1 dw ?
 Matrix db 128 dup (?)
 MAX dw ?
 MIN dw ?
@@ -175,7 +176,53 @@ invoke CharToOem, ADDR TextBuf, ADDR TextBuf
 invoke WriteConsoleA, outHandle, ADDR TextBuf, SIZEOF TextBuf, ADDR namberW, NULL
 invoke WriteConsoleA, outHandle, ADDR NewLine, SIZEOF NewLine, ADDR namberW, NULL
 ;==========Сортировка элементов в матрице =====================================
-
+MOV EBP, 0
+MOV ESI, 0
+MOV AX, 0
+MOV iterator, AX
+MOV AX, N
+SUB AX, 1
+MOV Ns1, AX
+Sort:
+MOV AX, iterator
+CMP AX, Ns1
+JE Sortend
+MUL N
+MOV BX, 2
+MUL BX
+MOV BP, AX
+LEA ECX, Matrix[EBP][ESI]
+INC iterator
+MOV AX, iterator
+MUL N
+MOV BX, 2
+MUL BX
+MOV BP, AX
+LEA EBX, Matrix[EBP][ESI]
+MOV AX,[EBX]
+CMP [ECX], AX
+JA SortProm
+JMP Sort
+SortProm:
+DEC iterator
+MOV [ECX],EAX
+MOV AX, iterator
+MUL N
+MOV BX, 0
+MUL BX
+MOV BP, AX
+LEA EBX, Matrix[EBP][ESI]
+MOV EAX, [ECX]
+MOV [EBX],EAX
+INC iterator
+JMP Sort
+Sortend:
+MOV EBP, 0
+MOV ESI, 0
+invoke wsprintf, addr TextBuf,addr MinFormat, Matrix[EBP][ESI]
+invoke CharToOem, ADDR TextBuf, ADDR TextBuf
+invoke WriteConsoleA, outHandle, ADDR TextBuf, SIZEOF TextBuf, ADDR namberW, NULL
+invoke WriteConsoleA, outHandle, ADDR NewLine, SIZEOF NewLine, ADDR namberW, NULL
 
 
 
