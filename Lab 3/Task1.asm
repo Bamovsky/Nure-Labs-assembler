@@ -14,11 +14,13 @@ includelib \masm32\lib\msvcrt.lib
 N dw ?
 M dw ?
 Ns1 dw ?
+M2 dw ?
 Matrix db 128 dup (?)
 MAX dw ?
 MIN dw ?
 iterator dw ?
 iterator2 dw ?
+iterator3 dw ?
 outHandle dd ?
 inHandle dd ?
 namberW dd ?
@@ -26,8 +28,9 @@ namberR dd ?
 ConsoleTitle db "Лаба 3",0	
 StartText db "Лабараторная работа №3 Черкашин В.А. АКТСИу 17-2 Вариант 11",0
 Task db "В двухмерном массиве отсортировать элементы каждого стобца по возрастанию",0dh,0ah, 
-"найти значение макисмально и минимального элемента и их индексы до и после сортировки",0
+"найти значение макисмально и минимального элемента",0
 MatrixText db "Введенная матрица",0
+SortText db "Отсортированная матрица",0
 NewLine db 0dh,0ah
 TextN db "Введите N",0
 TextM db "Введите M", 0	
@@ -186,10 +189,19 @@ SUB AX, 1
 MOV Ns1, AX
 MOV AX, 0
 MOV iterator2, AX
-SortInner:
+MOV iterator3, AX
+MOV AX, M
+MOV BX, 2
+MUL BX
+MOV M2, AX
+Sort2:
+MOV AX, iterator3
+CMP AX, M2
+JE Sort2end
+Sort1:
 MOV AX, iterator2
 CMP AX, M
-JE Sortend
+JE Sort1end
 Sort:
 MOV AX, iterator
 CMP AX, Ns1
@@ -218,13 +230,22 @@ MOV [EBX],AX
 JMP Sort
 SortInnerEnd:
 INC iterator2
-MOV SI, iterator2
+MOV AX, 0
+MOV iterator,AX
+JMP Sort1
+Sort1end:
+INC iterator3
+INC iterator3
+MOV AX, iterator3
+MOV ESI, EAX
 MOV AX, 0
 MOV iterator, AX
-JMP SortInner
-Sortend:
+MOV iterator2, AX
+JMP Sort2
+Sort2end:
 ;========Вывод сортированного массива на экран =============
-invoke WriteConsoleA, outHandle, ADDR MatrixText, SIZEOF MatrixText, ADDR namberW, NULL
+invoke CharToOem, ADDR SortText, ADDR SortText
+invoke WriteConsoleA, outHandle, ADDR SortText, SIZEOF SortText, ADDR namberW, NULL
 invoke WriteConsoleA, outHandle, ADDR NewLine, SIZEOF NewLine, ADDR namberW, NULL
 LEA ESI, Matrix
 MOV AX, N
@@ -252,19 +273,6 @@ invoke WriteConsoleA, outHandle, ADDR NewLine, SIZEOF NewLine, ADDR namberW, NUL
 JMP Output1
 OutputEnd1:
 ;======Что б консоль не закрылась ==========================
-
-
-
-invoke ReadConsole, inHandle,	ADDR NumberBuf, SIZEOF NumberBuf, ADDR namberR, NULL
-
-
-
-
-
-
-
-
-
-	            								
+invoke ReadConsole, inHandle,	ADDR NumberBuf, SIZEOF NumberBuf, ADDR namberR, NULL            								
 invoke ExitProcess, 0 					
 end start				
