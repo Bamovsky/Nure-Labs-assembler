@@ -1,4 +1,4 @@
-;Черкашин АКТСИу 17-2 Лаба 4
+;Черкашин АКТСИу 17-2 Лаба 4 задание №1
 .486					
 .model flat, STDCALL	   
 option casemap:none
@@ -27,7 +27,10 @@ TextBuf db 60 dup (?)
 NewLine db 0dh,0ah
 TextN db "Введите кол-во элементов в массиве",0
 Output db "%d ",0
+Output16 db "%0X ",0
 Modificator dw 1010110111111111b
+MasText db "Введенный массив : ",0
+MasText2 db "Отформированный массив : ",0
 .code
 start:
 ;======Получение консоли, установка Titile, получение Handle====
@@ -42,6 +45,8 @@ invoke SetConsoleTitle, ADDR ConsoleTitle
 invoke CharToOem, ADDR StartText, ADDR StartText
 invoke CharToOem, ADDR Task, ADDR Task
 invoke CharToOem, ADDR TextN, ADDR TextN
+invoke CharToOem, ADDR MasText, ADDR MasText
+invoke CharToOem, ADDR MasText2, ADDR MasText2
 ;=========Запись и чтение с консоли =========================
 invoke WriteConsoleA, outHandle, ADDR StartText, SIZEOF StartText, ADDR namberW, NULL 
 invoke WriteConsoleA, outHandle, ADDR NewLine, SIZEOF NewLine, ADDR namberW, NULL
@@ -66,6 +71,8 @@ JMP @Input
 @InputEnd:
 MOV EDI,0
 ;=====Вывод введенного массива =============================
+invoke WriteConsoleA, outHandle, ADDR MasText, SIZEOF MasText, ADDR namberW, NULL
+invoke WriteConsoleA, outHandle, ADDR NewLine, SIZEOF NewLine, ADDR namberW, NULL
 LEA ESI, MassifA
 CLD
 MOV BP, 0
@@ -98,6 +105,8 @@ JMP @Form
 MOV ESI,0
 MOV EDI,0
 ;====Вывод массива B =======================================
+invoke WriteConsoleA, outHandle, ADDR MasText2, SIZEOF MasText2, ADDR namberW, NULL
+invoke WriteConsoleA, outHandle, ADDR NewLine, SIZEOF NewLine, ADDR namberW, NULL
 LEA ESI, MassifB
 CLD
 MOV BP, 0
@@ -112,6 +121,26 @@ INC BP
 JMP @Output1
 @Output1End:
 MOV ESI, 0
+invoke WriteConsoleA, outHandle, ADDR NewLine, SIZEOF NewLine, ADDR namberW, NULL
+;=========== Вывод массива B в 16 коде =====================
+invoke WriteConsoleA, outHandle, ADDR MasText2, SIZEOF MasText2, ADDR namberW, NULL
+invoke WriteConsoleA, outHandle, ADDR NewLine, SIZEOF NewLine, ADDR namberW, NULL
+LEA ESI, MassifB
+CLD
+MOV BP, 0
+@Output2:
+CMP BP, N
+JE @Output2End
+LODSW
+invoke wsprintf, addr NumberBuf,addr Output16, AX
+invoke CharToOem, ADDR NumberBuf, ADDR NumberBuf
+invoke WriteConsoleA, outHandle, ADDR NumberBuf, SIZEOF NumberBuf , ADDR namberW, NULL
+INC BP
+JMP @Output2
+@Output2End:
+MOV ESI, 0
+invoke WriteConsoleA, outHandle, ADDR NewLine, SIZEOF NewLine, ADDR namberW, NULL
+;=========== Вывод массива B в бинарном коде ===============
 ;======Что б консоль не закрылась ==========================
 invoke ReadConsole, inHandle,	ADDR NumberBuf, SIZEOF NumberBuf, ADDR namberR, NULL            								
 invoke ExitProcess, 0 					
